@@ -49,7 +49,7 @@ if [ "$COMMAND" = "query" ]; then
 				DATA=$(echo "$RESULT" | jq -r '.ResultSet.Rows[1:][] | .Data | map(.VarCharValue) | @tsv')
 
 				OUTPUT="$HEADER\n$DATA"
-				echo -e "$OUTPUT" | column -t
+				echo -e "$OUTPUT" | column -s $'\t' -t
 				break
 			elif [ "$STATUS" = "FAILED" ]; then
 				echo "Query failed."
