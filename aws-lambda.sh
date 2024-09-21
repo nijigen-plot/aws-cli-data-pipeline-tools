@@ -36,20 +36,20 @@ fi
 
 # listコマンド
 if [ "$COMMAND" = "list" ]; then
-	LIST_RESULT=$(aws lambda list-functions | jq -r '.Functions[] | .FunctionName')
-	echo "$LIST_RESULT"
+	list_result=$(aws lambda list-functions | jq -r '.Functions[] | .FunctionName')
+	echo "$list_result"
 # invokeコマンド
 else
-	TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-	RESPONSE_FILE_NAME="response_${TIMESTAMP}.json"
-	PAYLOAD_JSON=$(echo "$PAYLOAD" | jq -c .)
-	INVOKE_RESULT=$(aws lambda invoke --function-name "$FUNCTION_NAME" --payload "$PAYLOAD_JSON" --cli-binary-format raw-in-base64-out --cli-read-timeout 0 "$RESPONSE_FILE_NAME")
+	timestamp=$(date +%Y%m%d_%H%M%S)
+	response_file_name="response_${timestamp}.json"
+	payload_json=$(echo "$PAYLOAD" | jq -c .)
+	invoke_result=$(aws lambda invoke --function-name "$FUNCTION_NAME" --payload "$payload_json" --cli-binary-format raw-in-base64-out --cli-read-timeout 0 "$response_file_name")
 	echo "AWS CLI Output:"
-	echo "$INVOKE_RESULT" | jq .
+	echo "$invoke_result" | jq .
 	echo
 	echo "Lambda Response:"
-	jq '.' "$RESPONSE_FILE_NAME"
+	jq '.' "$response_file_name"
 
-	rm "$RESPONSE_FILE_NAME"
+	rm "$response_file_name"
 fi
 

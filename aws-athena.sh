@@ -19,22 +19,22 @@ get_query_results() {
 
 	# クエリ実行結果がSUCCEEDEDになったら結果を表示
 	while true; do
-		EXECUTIONRESULT=$(aws athena get-query-execution --query-execution-id "$execution_id" --output json)
-		STATUS=$(echo $EXECUTIONRESULT | jq -r '.QueryExecution.Status.State')
-		if [ "$STATUS" = "SUCCEEDED" ]; then
+		execution_result=$(aws athena get-query-execution --query-execution-id "$execution_id" --output json)
+		status=$(echo $execution_result | jq -r '.QueryExecution.Status.State')
+		if [ "$status" = "SUCCEEDED" ]; then
 			echo "Query succeeded. Fetching results..."
-			RESULT=$(aws athena get-query-results --query-execution-id "$EXECUTIONID" --output json)
-			HEADER=$(echo "$RESULT" | jq -r '.ResultSet.ResultSetMetadata.ColumnInfo | map(.Label) | @tsv' | paste -sd '\t')
-			DATA=$(echo "$RESULT" | jq -r '.ResultSet.Rows[1:][] | .Data | map(.VarCharValue) | @tsv')
+			result=$(aws athena get-query-results --query-execution-id "$execution_id" --output json)
+			header=$(echo "$result" | jq -r '.ResultSet.ResultSetMetadata.ColumnInfo | map(.Label) | @tsv' | paste -sd '\t')
+			data=$(echo "$result" | jq -r '.ResultSet.Rows[1:][] | .Data | map(.VarCharValue) | @tsv')
 
-			OUTPUT="$HEADER\n$DATA"
-			echo -e "$OUTPUT" | column -s $'\t' -t
+			output="$header\n$data"
+			echo -e "$output" | column -s $'\t' -t
 			break
-		elif [ "$STATUS" = "FAILED" ]; then
+		elif [ "$status" = "FAILED" ]; then
 			echo "Query failed."
-			echo "(echo $EXECUTIONRESULT | jq '.QueryExecution.Status.StateChangeReason')"
+			echo "(echo $execution_result | jq '.QueryExecution.Status.StateChangeReason')"
 			break
-		elif [ "$STATUS" = "CANCELLED" ]; then
+		elif [ "$status" = "CANCELLED" ]; then
 			echo "Query was cancelled."
 			break
 		else
@@ -60,18 +60,18 @@ if [ "$COMMAND" = "query" ]; then
 	else
 
 		# クエリ実行の試行とエラーハンドリング
-		EXECUTION_RESPONSE=$(aws athena start-query-execution --query-string "$QUERY" --output json 2>&1)
+		execution_response=$(aws athena start-query-execution --query-string "$QUERY" --output json 2>&1)
 		
-		if echo "$EXECUTION_RESPONSE" | grep -q "InvalidRequestException"; then
-			echo "Error starting query execution: $EXECUTION_RESPONSE"
+		if echo "$execution_response" | grep -q "InvalidRequestException"; then
+			echo "Error starting query execution: $execution_response"
 			exit 1
 		fi
 
 		# クエリ実行IDの抽出
-		EXECUTIONID=$(echo "$EXECUTION_RESPONSE" | jq -r '.QueryExecutionId')
-		echo "Query Execution ID: $EXECUTIONID"
+		execution_id=$(echo "$execution_response" | jq -r '.QueryExecutionId')
+		echo "Query Execution ID: $execution_id"
 
-		get_query_results "$EXECUTIONID"
+		get_query_results "$execution_id"
 	fi
 fi
 
@@ -83,18 +83,18 @@ if [ "$COMMAND" = "file" ]; then
 	else
 		
 		# SQLファイルからクエリを読み取る
-		SQL_QUERY=$(cat "$QUERY")
-		EXECUTION_RESPONSE=$(aws athena start-query-execution --query-string "$SQL_QUERY" --output json 2>&1)
+		sql_query=$(cat "$QUERY")
+		execution_response=$(aws athena start-query-execution --query-string "$sql_query" --output json 2>&1)
 
-		if echo "$EXECUTION_RESPONSE" | grep -q "InvalidRequestException"; then
-			echo "Error starting query execution: $EXECUTION_RESPONSE"
+		if echo "$execution_response" | grep -q "InvalidRequestException"; then
+			echo "Error starting query execution: $execution_response"
 			exit 1
 		fi
 
 		# クエリ実行IDの抽出
-		EXECUTIONID=$(echo "$EXECUTION_RESPONSE" | jq -r '.QueryExecutionId')
-		echo "Query Execution ID: $EXECUTIONID"
+		execution_id=$(echo "$execution_response" | jq -r '.QueryExecutionId')
+		echo "Query Execution ID: $execution_id"
 
-		get_query_results "$EXECUTIONID"
+		get_query_results "$execution_id"
 	fi
 fi
