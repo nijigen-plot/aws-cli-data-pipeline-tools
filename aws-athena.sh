@@ -15,7 +15,20 @@ help() {
 }
 
 get_query_results() {
-	local execution_id=$1
+	local sql_query=$1
+
+		# クエリ実行の試行とエラーハンドリング
+		execution_response=$(aws athena start-query-execution --query-string "$sql_query" --output json 2>&1)
+		
+		if echo "$execution_response" | grep -q "InvalidRequestException"; then
+			echo "Error starting query execution: $execution_response"
+			exit 1
+		fi
+
+		# クエリ実行IDの抽出
+		execution_id=$(echo "$execution_response" | jq -r '.QueryExecutionId')
+		echo "Query Execution ID: $execution_id"
+
 
 	# クエリ実行結果がSUCCEEDEDになったら結果を表示
 	while true; do
@@ -59,19 +72,7 @@ if [ "$COMMAND" = "query" ]; then
 		help;
 	else
 
-		# クエリ実行の試行とエラーハンドリング
-		execution_response=$(aws athena start-query-execution --query-string "$QUERY" --output json 2>&1)
-		
-		if echo "$execution_response" | grep -q "InvalidRequestException"; then
-			echo "Error starting query execution: $execution_response"
-			exit 1
-		fi
-
-		# クエリ実行IDの抽出
-		execution_id=$(echo "$execution_response" | jq -r '.QueryExecutionId')
-		echo "Query Execution ID: $execution_id"
-
-		get_query_results "$execution_id"
+		get_query_results "$QUERY"
 	fi
 fi
 
@@ -84,17 +85,7 @@ if [ "$COMMAND" = "file" ]; then
 		
 		# SQLファイルからクエリを読み取る
 		sql_query=$(cat "$QUERY")
-		execution_response=$(aws athena start-query-execution --query-string "$sql_query" --output json 2>&1)
 
-		if echo "$execution_response" | grep -q "InvalidRequestException"; then
-			echo "Error starting query execution: $execution_response"
-			exit 1
-		fi
-
-		# クエリ実行IDの抽出
-		execution_id=$(echo "$execution_response" | jq -r '.QueryExecutionId')
-		echo "Query Execution ID: $execution_id"
-
-		get_query_results "$execution_id"
+		get_query_results "$sql_query"
 	fi
 fi
