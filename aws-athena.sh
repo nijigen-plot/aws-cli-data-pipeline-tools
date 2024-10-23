@@ -1,7 +1,7 @@
 #!/bin/bash
 
 COMMAND=$1;
-QUERY=$2;
+TARGET=$2;
 
 
 help() {
@@ -67,24 +67,24 @@ fi
 
 # queryコマンドの場合、次の引数にクエリがあるか
 if [ "$COMMAND" = "query" ]; then
-	if [ "$QUERY" = "" ]; then
+	if [ "$TARGET" = "" ]; then
 		echo "query requires second arg: query sentence";
 		help;
 	else
 
-		get_query_results "$QUERY"
+		get_query_results "$TARGET"
 	fi
 fi
 
 # fileコマンドの場合、次の引数に.sqlファイルが指定されているか
 if [ "$COMMAND" = "file" ]; then
-	if [[ "$QUERY" != *.sql ]]; then
+	if [[ "$TARGET" != *.sql ]]; then
 		echo "file requires second arg: .sql file";
 		help;
 	else
 		
 		# SQLファイルからクエリを読み取る
-		sql_query=$(cat "$QUERY")
+		sql_query=$(cat "$TARGET")
 
 		get_query_results "$sql_query"
 	fi
