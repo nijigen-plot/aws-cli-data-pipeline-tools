@@ -43,14 +43,14 @@ get_query_results() {
 
 			output="$header\n$data"
 			echo -e "$output" | column -s $'\t' -t
-			break
+			exit 0
 		elif [ "$status" = "FAILED" ]; then
 			echo "Query failed."
 			echo "(echo $execution_result | jq '.QueryExecution.Status.StateChangeReason')"
-			break
+			exit 1
 		elif [ "$status" = "CANCELLED" ]; then
 			echo "Query was cancelled."
-			break
+			exit 1
 		else
 			echo "Query is still running. Retrying in 1 second..."
 			sleep 1
