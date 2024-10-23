@@ -41,12 +41,12 @@ get_query_results() {
 			header=$(echo "$result" | jq -r '.ResultSet.ResultSetMetadata.ColumnInfo | map(.Label) | @tsv' | paste -sd '\t')
 			data=$(echo "$result" | jq -r '.ResultSet.Rows[1:][] | .Data | map(.VarCharValue) | @tsv')
 
-			output="$header\n$data"
-			echo -e "$output" | column -s $'\t' -t
+			output=$(echo -e "$header\n$data" | column -s $'\t' -t)
+			echo -e "$output"
 			exit 0
 		elif [ "$status" = "FAILED" ]; then
 			echo "Query failed."
-			echo "(echo $execution_result | jq '.QueryExecution.Status.StateChangeReason')"
+			echo "$(echo $execution_result | jq '.QueryExecution.Status.StateChangeReason')"
 			exit 1
 		elif [ "$status" = "CANCELLED" ]; then
 			echo "Query was cancelled."
