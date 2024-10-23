@@ -10,7 +10,7 @@ help() {
     echo
     echo "$0 query [query string] ... execution and get result the query"
 	echo "$0 file  [.sql file] ... execution and get result from the .sql file"
-	echo "$0 diff [Athena base catalog_name.database_name.table_name] [Athena compare target catalog_name.database_name.table_name] Compare tables first and second argument"
+	echo "$0 diff [Athena base database_name.table_name] [Athena compare target database_name.table_name] Compare tables first and second argument"
     echo
     exit 1
 }
@@ -94,10 +94,12 @@ fi
 # diffコマンドの場合、次と次の引数に入力があるか
 if [ "$COMMAND" = "diff" ]; then
 	if [ "$TARGET" = "" ] || [ "$TARGET2" = "" ]; then
-		echo "diff requires second and third arg: Athena catalog_name.database_name.table_name"
+		echo "diff requires second and third arg: Athena database_name.table_name"
+		# ここもうちょいエラーハンドリング欲しいかも
 		help;
 	else
+		IFS='.' read -r -a metadata <<< "$TARGET"
 		# テーブルのスキーマ情報を読み出す
-		echo WIP
+		get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${metadata[0]}' AND table_name = '${metadata[1]}'"
 	fi
 fi
