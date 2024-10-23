@@ -2,7 +2,7 @@
 
 COMMAND=$1;
 TARGET=$2;
-
+TARGET2=$3;
 
 help() {
     echo
@@ -10,6 +10,7 @@ help() {
     echo
     echo "$0 query [query string] ... execution and get result the query"
 	echo "$0 file  [.sql file] ... execution and get result from the .sql file"
+	echo "$0 diff [Athena base catalog_name.database_name.table_name] [Athena compare target catalog_name.database_name.table_name] Compare tables first and second argument"
     echo
     exit 1
 }
@@ -60,8 +61,8 @@ get_query_results() {
 
 
 # コマンドがサポートしている文字列で打たれているか
-if [ "$COMMAND" != "query" ] && [ "$COMMAND" != "file" ]; then
-	echo "COMMAND is required as 1st arg: query/file";
+if [ "$COMMAND" != "query" ] && [ "$COMMAND" != "file" ] && [ "$COMMAND" != "diff" ]; then
+	echo "COMMAND is required as 1st arg: query/file/diff";
 	help;
 fi
 
@@ -87,5 +88,16 @@ if [ "$COMMAND" = "file" ]; then
 		sql_query=$(cat "$TARGET")
 
 		get_query_results "$sql_query"
+	fi
+fi
+
+# diffコマンドの場合、次と次の引数に入力があるか
+if [ "$COMMAND" = "diff" ]; then
+	if [ "$TARGET" = "" ] || [ "$TARGET2" = "" ]; then
+		echo "diff requires second and third arg: Athena catalog_name.database_name.table_name"
+		help;
+	else
+		# テーブルのスキーマ情報を読み出す
+		echo WIP
 	fi
 fi
