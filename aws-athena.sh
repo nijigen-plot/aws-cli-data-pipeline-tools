@@ -165,7 +165,17 @@ if [ "$COMMAND" = "vimdiff" ]; then
 		# テーブルのスキーマ情報を読み出す
 		base_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${base_metadata[0]}' AND table_name = '${base_metadata[1]}'" | tail -n +3)
 		target_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${target_metadata[0]}' AND table_name = '${target_metadata[1]}'" | tail -n +3)
-		query_builder "$base_schema"
+		# スキーマ情報から集計用クエリを作る
+		base_query=$(query_builder "$base_schema")
+		target_query=$(query_builder "$target_schema")
+		echo "$target_query"
+		# 集計結果を取得する
+		base_result=$(get_query_results "$base_query" | column -s $'\t' -t)
+		target_result=$(get_query_results "$target_query" | column -s $'\t' -t)
+		# それぞれ書き出してvimdiff
+		echo "$base_result" > base_result.tsv
+		echo "$target_result" > target_result.tsv
+		vimdiff base_result.tsv target_result.tsv
 	fi
 fi
 
