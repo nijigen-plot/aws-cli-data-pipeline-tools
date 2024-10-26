@@ -41,9 +41,8 @@ get_query_results() {
 			result=$(aws athena get-query-results --query-execution-id "$execution_id" --output json)
 			header=$(echo "$result" | jq -r '.ResultSet.ResultSetMetadata.ColumnInfo | map(.Label) | @tsv' | paste -sd '\t')
 			data=$(echo "$result" | jq -r '.ResultSet.Rows[1:][] | .Data | map(.VarCharValue) | @tsv')
-
-			output=$(echo -e "$header\n$data" | column -s $'\t' -t)
-			echo -e "$output"
+			output=$(echo -e "$header\n$data")
+			echo "$output"
 			exit 0
 		elif [ "$status" = "FAILED" ]; then
 			echo "Query failed."
@@ -74,7 +73,8 @@ if [ "$COMMAND" = "query" ]; then
 		help;
 	else
 
-		get_query_results "$TARGET"
+		result=$(get_query_results "$TARGET")
+		echo "$result" | column -s $'\t' -t
 	fi
 fi
 
@@ -88,7 +88,8 @@ if [ "$COMMAND" = "file" ]; then
 		# SQLファイルからクエリを読み取る
 		sql_query=$(cat "$TARGET")
 
-		get_query_results "$sql_query"
+		result=$(get_query_results "$sql_query")
+		echo "$result" | column -s $'\t' -t
 	fi
 fi
 
