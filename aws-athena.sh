@@ -99,8 +99,12 @@ if [ "$COMMAND" = "diff" ]; then
 		# ここもうちょいエラーハンドリング欲しいかも
 		help;
 	else
-		IFS='.' read -r -a metadata <<< "$TARGET"
+		IFS='.' read -r -a base_metadata <<< "$TARGET"
+		IFS='.' read -r -a target_metadata <<< "$TARGET2"
 		# テーブルのスキーマ情報を読み出す
-		get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${metadata[0]}' AND table_name = '${metadata[1]}'"
+		base_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${base_metadata[0]}' AND table_name = '${base_metadata[1]}'" | tail -n +3)
+		target_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${target_metadata[0]}' AND table_name = '${target_metadata[1]}'" | tail -n +3)
+		query_builder "$base_schema"
 	fi
 fi
+
