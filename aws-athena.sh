@@ -75,24 +75,24 @@ query_builder() {
 		for (j = 1; j<= agg_phase; j++){
 			# 一番最初だけUNION ALLつけない
 			if (NR == 1 && j == 1){
-				print "select '\''" $4 "'\'' as column_name, '\''count'\'' as agg_type, (select count(" $4 ") from " $1 "." $2 "." $3 ") as result"
+				print "select '\''" $4 "'\'' as column_name, '\''1. count'\'' as agg_type, (select count(" $4 ") from " $1 "." $2 "." $3 ") as result"
 			} else if (j == 1){
-				print "union all select '\''" $4 "'\'' as column_name, '\''count'\'' as agg_type, (select count(" $4 ") from " $1 "." $2 "." $3 ") as result"
+				print "union all select '\''" $4 "'\'' as column_name, '\''1. count'\'' as agg_type, (select count(" $4 ") from " $1 "." $2 "." $3 ") as result"
 			} else if (j == 2){
-				print "union all select '\''" $4 "'\'' as column_name, '\''count_distinct'\'' as agg_type, (select count(distinct " $4 ") from " $1 "." $2 "." $3 ") as result"
+				print "union all select '\''" $4 "'\'' as column_name, '\''2. count_distinct'\'' as agg_type, (select count(distinct " $4 ") from " $1 "." $2 "." $3 ") as result"
 			} else if (j == 3){
-				print "union all select '\''" $4 "'\'' as column_name, '\''mean'\'' as agg_type, (select avg(" $4 ") from " $1 "." $2 "." $3 ") as result"
+				print "union all select '\''" $4 "'\'' as column_name, '\''3. mean'\'' as agg_type, (select avg(" $4 ") from " $1 "." $2 "." $3 ") as result"
 
 			} else if (j == 4){
-		print "union all select '\''" $4 "'\'' as column_name, '\''std'\'' as agg_type, (select stddev(" $4 ") from " $1 "." $2 "." $3 ") as result"
+		print "union all select '\''" $4 "'\'' as column_name, '\''4. std'\'' as agg_type, (select stddev(" $4 ") from " $1 "." $2 "." $3 ") as result"
 
 			} else if (j == 5){
-		print "union all select '\''" $4 "'\'' as column_name, '\''min'\'' as agg_type, (select min(" $4 ") from " $1 "." $2 "." $3 ") as result"
+		print "union all select '\''" $4 "'\'' as column_name, '\''5. min'\'' as agg_type, (select min(" $4 ") from " $1 "." $2 "." $3 ") as result"
 
 			} else if (j == 6){
-		print "union all select '\''" $4 "'\'' as column_name, '\''median'\'' as agg_type, (select approx_percentile(" $4 ", 0.5) from " $1 "." $2 "." $3 ") as result"
+		print "union all select '\''" $4 "'\'' as column_name, '\''6. median'\'' as agg_type, (select approx_percentile(" $4 ", 0.5) from " $1 "." $2 "." $3 ") as result"
 			} else if (j == 7){
-		print "union all select '\''" $4 "'\'' as column_name, '\''max'\'' as agg_type, (select max(" $4 ") from " $1 "." $2 "." $3 ") as result"
+		print "union all select '\''" $4 "'\'' as column_name, '\''7. max'\'' as agg_type, (select max(" $4 ") from " $1 "." $2 "." $3 ") as result"
 
 			} else {
 				# 特に何もしない
@@ -112,7 +112,7 @@ query_builder() {
 		print ", kv['\''" $4 "'\''] as " $4 ""
 	}
 	END {
-		print "from (select agg_type, map_agg(column_name, result) as kv from(" agg_query ") group by agg_type )"
+		print "from (select agg_type, map_agg(column_name, result) as kv from(" agg_query ") group by agg_type order by agg_type)"
 	}
 	' <<< "$filtered_schema")
 	echo "$pivot_query"
