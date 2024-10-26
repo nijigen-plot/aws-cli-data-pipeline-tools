@@ -52,11 +52,9 @@ get_query_results() {
 			echo "Query was cancelled."
 			exit 1
 		else
-			echo "Query is still running. Retrying in 1 second..."
 			sleep 1
 		fi
 	done
-
 }
 
 
