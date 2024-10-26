@@ -10,7 +10,7 @@ help() {
     echo
     echo "$0 query [query string] ... execution and get result the query"
 	echo "$0 file  [.sql file] ... execution and get result from the .sql file"
-	echo "$0 diff [Athena base database_name.table_name] [Athena compare target database_name.table_name] Compare tables first and second argument"
+	echo "$0 vimdiff [Athena base database_name.table_name] [Athena compare target database_name.table_name] Compare tables first and second argument"
     echo
     exit 1
 }
@@ -59,8 +59,8 @@ get_query_results() {
 
 
 # コマンドがサポートしている文字列で打たれているか
-if [ "$COMMAND" != "query" ] && [ "$COMMAND" != "file" ] && [ "$COMMAND" != "diff" ]; then
-	echo "COMMAND is required as 1st arg: query/file/diff";
+if [ "$COMMAND" != "query" ] && [ "$COMMAND" != "file" ] && [ "$COMMAND" != "vimdiff" ]; then
+	echo "COMMAND is required as 1st arg: query/file/vimdiff";
 	help;
 fi
 
@@ -91,10 +91,10 @@ if [ "$COMMAND" = "file" ]; then
 	fi
 fi
 
-# diffコマンドの場合、次と次の引数に入力があるか
-if [ "$COMMAND" = "diff" ]; then
+# vimdiffコマンドの場合、次と次の引数に入力があるか
+if [ "$COMMAND" = "vimdiff" ]; then
 	if [ "$TARGET" = "" ] || [ "$TARGET2" = "" ]; then
-		echo "diff requires second and third arg: Athena database_name.table_name"
+		echo "vimdiff requires second and third arg: Athena database_name.table_name"
 		# ここもうちょいエラーハンドリング欲しいかも
 		help;
 	else
