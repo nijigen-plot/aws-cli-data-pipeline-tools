@@ -161,33 +161,25 @@ if [ "$COMMAND" = "vimdiff" ]; then
 		echo "Error: Arguments must be in the format 'database_name.table_name' and contain dot (.)"
 		help;
 	else
+		base_result=$(mktemp)
+		target_result=$(mktemp)
+		trap 'rm -f "$base_result" "$target_result"' EXIT
 		IFS='.' read -r -a base_metadata <<< "$TARGET"
 		IFS='.' read -r -a target_metadata <<< "$TARGET2"
-        # テーブルのスキーマ情報を読み出す
-        base_schema=$(mktemp)
-        if ! get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${base_metadata[0]}' AND table_name = '${base_metadata[1]}'" > "$base_schema"; then
-            echo "Failed on the table provided as the second argument."
-            exit 1
-        fi
-
-        target_schema=$(mktemp)
-        if ! get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${target_metadata[0]}' AND table_name = '${target_metadata[1]}'" > "$target_schema"; then
-            echo "Failed on the table provided as the third argument."
-            exit 1
-        fi
+        # テーブルのスキーマ情報を読み出す 存在しないテーブルの場合でもクエリは成功する
+		base_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${base_metadata[0]}' AND table_name = '${base_metadata[1]}'" | tail -n +3)
+		target_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${target_metadata[0]}' AND table_name = '${target_metadata[1]}'" | tail -n +3)
 
         # スキーマ情報から集計用クエリを作る
-        base_query=$(query_builder "$(tail -n +3 "$base_schema")")
-        target_query=$(query_builder "$(tail -n +3 "$target_schema")")
+        base_query=$(query_builder "$base_schema")
+        target_query=$(query_builder "$target_schema")
 
         # 集計結果を取得する
-        base_result=$(mktemp)
         if ! get_query_results "$base_query" > "$base_result"; then
             echo "Failed on the table provided as the second argument."
             exit 1
         fi
 
-        target_result=$(mktemp)
         if ! get_query_results "$target_query" > "$target_result"; then
             echo "Failed on the table provided as the third argument."
             exit 1
@@ -198,8 +190,6 @@ if [ "$COMMAND" = "vimdiff" ]; then
         column -s $'\t' -t "$target_result" > target_result.tsv
         vimdiff base_result.tsv target_result.tsv
         
-		# 一時ファイルを削除
-        rm "$base_schema" "$target_schema" "$base_result" "$target_result"
 	fi
 fi
 
