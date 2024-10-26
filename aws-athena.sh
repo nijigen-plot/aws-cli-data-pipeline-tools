@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 
 COMMAND=$1;
 TARGET=$2;
@@ -17,44 +17,44 @@ help() {
 
 # クエリから結果を出力する
 get_query_results() {
-	local sql_query=$1
+    local sql_query=$1
+    local result
 
-		# クエリ実行の試行とエラーハンドリング
-		execution_response=$(aws athena start-query-execution --query-string "$sql_query" --output json 2>&1)
-		
-		if echo "$execution_response" | grep -q "InvalidRequestException"; then
-			echo "Error starting query execution: $execution_response"
-			exit 1
-		fi
+    # クエリ実行の試行とエラーハンドリング
+    execution_response=$(aws athena start-query-execution --query-string "$sql_query" --output json 2>&1)
 
-		# クエリ実行IDの抽出
-		execution_id=$(echo "$execution_response" | jq -r '.QueryExecutionId')
-		echo "Query Execution ID: $execution_id"
+    if echo "$execution_response" | grep -q "InvalidRequestException"; then
+        echo "Error starting query execution: $execution_response" >&2
+        return 1
+    fi
 
+    # クエリ実行IDの抽出
+    execution_id=$(echo "$execution_response" | jq -r '.QueryExecutionId')
+    echo "Query Execution ID: $execution_id"
 
-	# クエリ実行結果がSUCCEEDEDになったら結果を表示
-	while true; do
-		execution_result=$(aws athena get-query-execution --query-execution-id "$execution_id" --output json)
-		status=$(echo $execution_result | jq -r '.QueryExecution.Status.State')
-		if [ "$status" = "SUCCEEDED" ]; then
-			echo "Query succeeded. Fetching results..."
-			result=$(aws athena get-query-results --query-execution-id "$execution_id" --output json)
-			header=$(echo "$result" | jq -r '.ResultSet.ResultSetMetadata.ColumnInfo | map(.Label) | @tsv' | paste -sd '\t')
-			data=$(echo "$result" | jq -r '.ResultSet.Rows[1:][] | .Data | map(.VarCharValue) | @tsv')
-			output=$(echo -e "$header\n$data")
-			echo "$output"
-			exit 0
-		elif [ "$status" = "FAILED" ]; then
-			echo "Query failed."
-			echo "$(echo $execution_result | jq '.QueryExecution.Status.StateChangeReason')"
-			exit 1
-		elif [ "$status" = "CANCELLED" ]; then
-			echo "Query was cancelled."
-			exit 1
-		else
-			sleep 1
-		fi
-	done
+    # クエリ実行結果がSUCCEEDEDになったら結果を表示
+    while true; do
+        execution_result=$(aws athena get-query-execution --query-execution-id "$execution_id" --output json)
+        status=$(echo "$execution_result" | jq -r '.QueryExecution.Status.State')
+        if [ "$status" = "SUCCEEDED" ]; then
+            echo "Query succeeded. Fetching results..."
+            result=$(aws athena get-query-results --query-execution-id "$execution_id" --output json)
+            header=$(echo "$result" | jq -r '.ResultSet.ResultSetMetadata.ColumnInfo | map(.Label) | @tsv' | paste -sd '\t')
+            data=$(echo "$result" | jq -r '.ResultSet.Rows[1:][] | .Data | map(.VarCharValue) | @tsv')
+            output=$(echo -e "$header\n$data")
+            echo "$output"
+            return 0
+        elif [ "$status" = "FAILED" ]; then
+            echo "Query failed." >&2
+            echo "$(echo "$execution_result" | jq '.QueryExecution.Status.StateChangeReason')" >&2
+            return 1
+        elif [ "$status" = "CANCELLED" ]; then
+            echo "Query was cancelled." >&2
+            return 1
+        else
+            sleep 1
+        fi
+    done
 }
 
 # information_schemaからクエリを作る
@@ -116,6 +116,7 @@ query_builder() {
 	}
 	' <<< "$filtered_schema")
 	echo "$pivot_query"
+	return 0
 }
 
 # コマンドがサポートしている文字列で打たれているか
@@ -127,7 +128,7 @@ fi
 # queryコマンドの場合、次の引数にクエリがあるか
 if [ "$COMMAND" = "query" ]; then
 	if [ "$TARGET" = "" ]; then
-		echo "query requires second arg: query sentence";
+		echo "Error: query requires second arg: query sentence";
 		help;
 	else
 
@@ -139,7 +140,7 @@ fi
 # fileコマンドの場合、次の引数に.sqlファイルが指定されているか
 if [ "$COMMAND" = "file" ]; then
 	if [[ "$TARGET" != *.sql ]]; then
-		echo "file requires second arg: .sql file";
+		echo "Error: file requires second arg: .sql file";
 		help;
 	else
 		
@@ -154,7 +155,7 @@ fi
 # vimdiffコマンドの場合、次と次の引数に入力があるか
 if [ "$COMMAND" = "vimdiff" ]; then
 	if [ "$TARGET" = "" ] || [ "$TARGET2" = "" ]; then
-		echo "vimdiff requires second and third arg: Athena database_name.table_name"
+		echo "Error: vimdiff requires second and third arg: Athena database_name.table_name"
 		help;
 	elif [[ "$TARGET" != *.* ]] || [[ "$TARGET2" != *.* ]]; then
 		echo "Error: Arguments must be in the format 'database_name.table_name' and contain dot (.)"
@@ -162,20 +163,43 @@ if [ "$COMMAND" = "vimdiff" ]; then
 	else
 		IFS='.' read -r -a base_metadata <<< "$TARGET"
 		IFS='.' read -r -a target_metadata <<< "$TARGET2"
-		# テーブルのスキーマ情報を読み出す
-		base_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${base_metadata[0]}' AND table_name = '${base_metadata[1]}'" | tail -n +3)
-		target_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${target_metadata[0]}' AND table_name = '${target_metadata[1]}'" | tail -n +3)
-		# スキーマ情報から集計用クエリを作る
-		base_query=$(query_builder "$base_schema")
-		target_query=$(query_builder "$target_schema")
-		echo "$target_query"
-		# 集計結果を取得する
-		base_result=$(get_query_results "$base_query" | column -s $'\t' -t)
-		target_result=$(get_query_results "$target_query" | column -s $'\t' -t)
-		# それぞれ書き出してvimdiff
-		echo "$base_result" > base_result.tsv
-		echo "$target_result" > target_result.tsv
-		vimdiff base_result.tsv target_result.tsv
+        # テーブルのスキーマ情報を読み出す
+        base_schema=$(mktemp)
+        if ! get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${base_metadata[0]}' AND table_name = '${base_metadata[1]}'" > "$base_schema"; then
+            echo "Failed on the table provided as the second argument."
+            exit 1
+        fi
+
+        target_schema=$(mktemp)
+        if ! get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${target_metadata[0]}' AND table_name = '${target_metadata[1]}'" > "$target_schema"; then
+            echo "Failed on the table provided as the third argument."
+            exit 1
+        fi
+
+        # スキーマ情報から集計用クエリを作る
+        base_query=$(query_builder "$(tail -n +3 "$base_schema")")
+        target_query=$(query_builder "$(tail -n +3 "$target_schema")")
+
+        # 集計結果を取得する
+        base_result=$(mktemp)
+        if ! get_query_results "$base_query" > "$base_result"; then
+            echo "Failed on the table provided as the second argument."
+            exit 1
+        fi
+
+        target_result=$(mktemp)
+        if ! get_query_results "$target_query" > "$target_result"; then
+            echo "Failed on the table provided as the third argument."
+            exit 1
+        fi
+
+        # 結果を整形してvimdiff
+        column -s $'\t' -t "$base_result" > base_result.tsv
+        column -s $'\t' -t "$target_result" > target_result.tsv
+        vimdiff base_result.tsv target_result.tsv
+        
+		# 一時ファイルを削除
+        rm "$base_schema" "$target_schema" "$base_result" "$target_result"
 	fi
 fi
 
