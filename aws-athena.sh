@@ -15,6 +15,7 @@ help() {
     exit 1
 }
 
+# クエリから結果を出力する
 get_query_results() {
 	local sql_query=$1
 
