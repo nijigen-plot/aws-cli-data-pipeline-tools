@@ -57,6 +57,66 @@ get_query_results() {
 	done
 }
 
+# information_schemaからクエリを作る
+query_builder() {
+	local information_schema=$1
+
+	# data_typeが以下条件に該当するものを抜き出す
+	filtered_schema=$(awk -F'\t' '$8 ~/^(tinyint|smallint|integer|bigint|real|double|decimal.*)$/' <<< "${information_schema}")
+
+	# 集計種類の数
+	local agg_phase=7
+	# 行数x集計種類数でforを回してクエリを作る
+	agg_query=$(awk -F'\t' -v agg_phase="$agg_phase" '
+	BEGIN {
+		print "select column_name, agg_type, result from ("
+	}
+	{
+		for (j = 1; j<= agg_phase; j++){
+			# 一番最初だけUNION ALLつけない
+			if (NR == 1 && j == 1){
+				print "select '\''" $4 "'\'' as column_name, '\''count'\'' as agg_type, (select count(" $4 ") from " $1 "." $2 "." $3 ") as result"
+			} else if (j == 1){
+				print "union all select '\''" $4 "'\'' as column_name, '\''count'\'' as agg_type, (select count(" $4 ") from " $1 "." $2 "." $3 ") as result"
+			} else if (j == 2){
+				print "union all select '\''" $4 "'\'' as column_name, '\''count_distinct'\'' as agg_type, (select count(distinct " $4 ") from " $1 "." $2 "." $3 ") as result"
+			} else if (j == 3){
+				print "union all select '\''" $4 "'\'' as column_name, '\''mean'\'' as agg_type, (select avg(" $4 ") from " $1 "." $2 "." $3 ") as result"
+
+			} else if (j == 4){
+		print "union all select '\''" $4 "'\'' as column_name, '\''std'\'' as agg_type, (select stddev(" $4 ") from " $1 "." $2 "." $3 ") as result"
+
+			} else if (j == 5){
+		print "union all select '\''" $4 "'\'' as column_name, '\''min'\'' as agg_type, (select min(" $4 ") from " $1 "." $2 "." $3 ") as result"
+
+			} else if (j == 6){
+		print "union all select '\''" $4 "'\'' as column_name, '\''median'\'' as agg_type, (select approx_percentile(" $4 ", 0.5) from " $1 "." $2 "." $3 ") as result"
+			} else if (j == 7){
+		print "union all select '\''" $4 "'\'' as column_name, '\''max'\'' as agg_type, (select max(" $4 ") from " $1 "." $2 "." $3 ") as result"
+
+			} else {
+				# 特に何もしない
+			}
+		}
+	}
+	END {
+		print")"
+	}
+	' <<< "$filtered_schema")
+	# ピボットする
+	pivot_query=$(awk -F'\t' -v agg_query="$agg_query" '
+	BEGIN {
+		print "select agg_type"
+	}
+	{
+		print ", kv['\''" $4 "'\''] as " $4 ""
+	}
+	END {
+		print "from (select agg_type, map_agg(column_name, result) as kv from(" agg_query ") group by agg_type )"
+	}
+	' <<< "$filtered_schema")
+	echo "$pivot_query"
+}
 
 # コマンドがサポートしている文字列で打たれているか
 if [ "$COMMAND" != "query" ] && [ "$COMMAND" != "file" ] && [ "$COMMAND" != "vimdiff" ]; then
