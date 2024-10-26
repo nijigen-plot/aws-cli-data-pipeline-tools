@@ -186,8 +186,8 @@ if [ "$COMMAND" = "vimdiff" ]; then
         fi
 
         # 結果を整形してvimdiff
-        column -s $'\t' -t "$base_result" > base_result.tsv
-        column -s $'\t' -t "$target_result" > target_result.tsv
+        column -s $'\t' -t "$base_result" | tail -n +3 > base_result.tsv
+        column -s $'\t' -t "$target_result" | tail -n +3 > target_result.tsv
         vimdiff base_result.tsv target_result.tsv
         
 	fi
