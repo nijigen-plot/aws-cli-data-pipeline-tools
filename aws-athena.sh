@@ -155,7 +155,9 @@ fi
 if [ "$COMMAND" = "vimdiff" ]; then
 	if [ "$TARGET" = "" ] || [ "$TARGET2" = "" ]; then
 		echo "vimdiff requires second and third arg: Athena database_name.table_name"
-		# ここもうちょいエラーハンドリング欲しいかも
+		help;
+	elif [[ "$TARGET" != *.* ]] || [[ "$TARGET2" != *.* ]]; then
+		echo "Error: Arguments must be in the format 'database_name.table_name' and contain dot (.)"
 		help;
 	else
 		IFS='.' read -r -a base_metadata <<< "$TARGET"
