@@ -81,10 +81,10 @@ query_builder() {
 			} else if (j == 2){
 				print "union all select '\''" $4 "'\'' as column_name, '\''2. count_distinct'\'' as agg_type, (select count(distinct " $4 ") from " $1 "." $2 "." $3 ") as result"
 			} else if (j == 3){
-				print "union all select '\''" $4 "'\'' as column_name, '\''3. mean'\'' as agg_type, (select avg(" $4 ") from " $1 "." $2 "." $3 ") as result"
+				print "union all select '\''" $4 "'\'' as column_name, '\''3. mean'\'' as agg_type, (select round(avg(" $4 "),5) from " $1 "." $2 "." $3 ") as result"
 
 			} else if (j == 4){
-		print "union all select '\''" $4 "'\'' as column_name, '\''4. std'\'' as agg_type, (select stddev(" $4 ") from " $1 "." $2 "." $3 ") as result"
+		print "union all select '\''" $4 "'\'' as column_name, '\''4. std'\'' as agg_type, (select round(stddev(" $4 "),5) from " $1 "." $2 "." $3 ") as result"
 
 			} else if (j == 5){
 		print "union all select '\''" $4 "'\'' as column_name, '\''5. min'\'' as agg_type, (select min(" $4 ") from " $1 "." $2 "." $3 ") as result"
