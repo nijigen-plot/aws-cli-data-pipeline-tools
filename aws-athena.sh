@@ -9,8 +9,8 @@ help() {
     echo $0 ... aws athena wrapper command
     echo
     echo "$0 query [query string] ... execution and get result the query"
-	echo "$0 file  [.sql file] ... execution and get result from the .sql file"
-	echo "$0 vimdiff [Athena base database_name.table_name] [Athena compare target database_name.table_name] Compare tables first and second argument"
+    echo "$0 file  [.sql file] ... execution and get result from the .sql file"
+    echo "$0 vimdiff [Athena base database_name.table_name] [Athena compare target database_name.table_name] Compare tables first and second argument"
     echo
     exit 1
 }
@@ -75,24 +75,24 @@ query_builder() {
 		for (j = 1; j<= agg_phase; j++){
 			# 一番最初だけUNION ALLつけない
 			if (NR == 1 && j == 1){
-				print "select '\''" $4 "'\'' as column_name, '\''1. count'\'' as agg_type, (select count(" $4 ") from " $1 "." $2 "." $3 ") as result"
+				print "select '\''" $4 "'\'' as column_name, '\''1. count'\'' as agg_type, (select count(\"" $4 "\") from " $1 "." $2 "." $3 ") as result"
 			} else if (j == 1){
-				print "union all select '\''" $4 "'\'' as column_name, '\''1. count'\'' as agg_type, (select count(" $4 ") from " $1 "." $2 "." $3 ") as result"
+				print "union all select '\''" $4 "'\'' as column_name, '\''1. count'\'' as agg_type, (select count(\"" $4 "\") from " $1 "." $2 "." $3 ") as result"
 			} else if (j == 2){
-				print "union all select '\''" $4 "'\'' as column_name, '\''2. count_distinct'\'' as agg_type, (select count(distinct " $4 ") from " $1 "." $2 "." $3 ") as result"
+				print "union all select '\''" $4 "'\'' as column_name, '\''2. count_distinct'\'' as agg_type, (select count(distinct \"" $4 "\") from " $1 "." $2 "." $3 ") as result"
 			} else if (j == 3){
-				print "union all select '\''" $4 "'\'' as column_name, '\''3. mean'\'' as agg_type, (select round(avg(" $4 "),5) from " $1 "." $2 "." $3 ") as result"
+				print "union all select '\''" $4 "'\'' as column_name, '\''3. mean'\'' as agg_type, (select round(avg(\"" $4 "\"),5) from " $1 "." $2 "." $3 ") as result"
 
 			} else if (j == 4){
-		print "union all select '\''" $4 "'\'' as column_name, '\''4. std'\'' as agg_type, (select round(stddev(" $4 "),5) from " $1 "." $2 "." $3 ") as result"
+		print "union all select '\''" $4 "'\'' as column_name, '\''4. std'\'' as agg_type, (select round(stddev(\"" $4 "\"),5) from " $1 "." $2 "." $3 ") as result"
 
 			} else if (j == 5){
-		print "union all select '\''" $4 "'\'' as column_name, '\''5. min'\'' as agg_type, (select min(" $4 ") from " $1 "." $2 "." $3 ") as result"
+		print "union all select '\''" $4 "'\'' as column_name, '\''5. min'\'' as agg_type, (select min(\"" $4 "\") from " $1 "." $2 "." $3 ") as result"
 
 			} else if (j == 6){
-		print "union all select '\''" $4 "'\'' as column_name, '\''6. median'\'' as agg_type, (select approx_percentile(" $4 ", 0.5) from " $1 "." $2 "." $3 ") as result"
+		print "union all select '\''" $4 "'\'' as column_name, '\''6. median'\'' as agg_type, (select approx_percentile(\"" $4 "\", 0.5) from " $1 "." $2 "." $3 ") as result"
 			} else if (j == 7){
-		print "union all select '\''" $4 "'\'' as column_name, '\''7. max'\'' as agg_type, (select max(" $4 ") from " $1 "." $2 "." $3 ") as result"
+		print "union all select '\''" $4 "'\'' as column_name, '\''7. max'\'' as agg_type, (select max(\"" $4 "\") from " $1 "." $2 "." $3 ") as result"
 
 			} else {
 				# 特に何もしない
@@ -109,7 +109,7 @@ query_builder() {
 		print "select agg_type"
 	}
 	{
-		print ", kv['\''" $4 "'\''] as " $4 ""
+		print ", kv['\''" $4 "'\''] as \"" $4 "\""
 	}
 	END {
 		print "from (select agg_type, map_agg(column_name, result) as kv from(" agg_query ") group by agg_type order by agg_type)"
@@ -166,30 +166,30 @@ if [ "$COMMAND" = "vimdiff" ]; then
 		trap 'rm -f "$base_result" "$target_result"' EXIT
 		IFS='.' read -r -a base_metadata <<< "$TARGET"
 		IFS='.' read -r -a target_metadata <<< "$TARGET2"
-        # テーブルのスキーマ情報を読み出す 存在しないテーブルの場合でもクエリは成功する
+		# テーブルのスキーマ情報を読み出す 存在しないテーブルの場合でもクエリは成功する
 		base_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${base_metadata[0]}' AND table_name = '${base_metadata[1]}'" | tail -n +3)
 		target_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${target_metadata[0]}' AND table_name = '${target_metadata[1]}'" | tail -n +3)
 
-        # スキーマ情報から集計用クエリを作る
-        base_query=$(query_builder "$base_schema")
-        target_query=$(query_builder "$target_schema")
+		# スキーマ情報から集計用クエリを作る
+		base_query=$(query_builder "$base_schema")
+		target_query=$(query_builder "$target_schema")
+		echo "$target_query"
+		# 集計結果を取得する
+		if ! get_query_results "$base_query" > "$base_result"; then
+			echo "Failed on the table provided as the second argument."
+			exit 1
+		fi
 
-        # 集計結果を取得する
-        if ! get_query_results "$base_query" > "$base_result"; then
-            echo "Failed on the table provided as the second argument."
-            exit 1
-        fi
+		if ! get_query_results "$target_query" > "$target_result"; then
+			echo "Failed on the table provided as the third argument."
+			exit 1
+		fi
 
-        if ! get_query_results "$target_query" > "$target_result"; then
-            echo "Failed on the table provided as the third argument."
-            exit 1
-        fi
+		# 結果を整形してvimdiff
+		column -s $'\t' -t "$base_result" | tail -n +3 > base_result.tsv
+		column -s $'\t' -t "$target_result" | tail -n +3 > target_result.tsv
+		vimdiff base_result.tsv target_result.tsv
 
-        # 結果を整形してvimdiff
-        column -s $'\t' -t "$base_result" | tail -n +3 > base_result.tsv
-        column -s $'\t' -t "$target_result" | tail -n +3 > target_result.tsv
-        vimdiff base_result.tsv target_result.tsv
-        
 	fi
 fi
 
