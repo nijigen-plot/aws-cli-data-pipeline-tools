@@ -1,4 +1,4 @@
-aws-cli-athena-wrapper-script
+aws-cli-data-pipeline-tools
 ==============
 
 Athena/Lambda [aws cli](https://awscli.amazonaws.com/v2/documentation/api/latest/index.html) wrapper script
