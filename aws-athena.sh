@@ -65,7 +65,7 @@ query_builder() {
 	filtered_schema=$(awk -F'\t' '$8 ~/^(tinyint|smallint|integer|bigint|real|double|decimal.*)$/' <<< "${information_schema}")
 
 	# 集計種類の数
-	local agg_phase=7
+	local agg_phase=8
 	# 行数x集計種類数でforを回してクエリを作る
 	agg_query=$(awk -F'\t' -v agg_phase="$agg_phase" '
 	BEGIN {
@@ -87,12 +87,14 @@ query_builder() {
 		print "union all select '\''" $4 "'\'' as column_name, '\''4. std'\'' as agg_type, (select round(stddev(\"" $4 "\"),5) from " $1 "." $2 "." $3 ") as result"
 
 			} else if (j == 5){
-		print "union all select '\''" $4 "'\'' as column_name, '\''5. min'\'' as agg_type, (select min(\"" $4 "\") from " $1 "." $2 "." $3 ") as result"
+			print "union all select '\''" $4 "'\'' as column_name, '\''5. min'\'' as agg_type, (select round(min(\"" $4 "\"),5) from " $1 "." $2 "." $3 ") as result"
 
 			} else if (j == 6){
-		print "union all select '\''" $4 "'\'' as column_name, '\''6. median'\'' as agg_type, (select approx_percentile(\"" $4 "\", 0.5) from " $1 "." $2 "." $3 ") as result"
+			print "union all select '\''" $4 "'\'' as column_name, '\''6. median'\'' as agg_type, (select round(approx_percentile(\"" $4 "\", 0.5),5) from " $1 "." $2 "." $3 ") as result"
 			} else if (j == 7){
-		print "union all select '\''" $4 "'\'' as column_name, '\''7. max'\'' as agg_type, (select max(\"" $4 "\") from " $1 "." $2 "." $3 ") as result"
+			print "union all select '\''" $4 "'\'' as column_name, '\''7. max'\'' as agg_type, (select round(max(\"" $4 "\"),5) from " $1 "." $2 "." $3 ") as result"
+			} else if (j == 8){
+			print "union all select '\''" $4 "'\'' as column_name, '\''7. sum'\'' as agg_type, (select round(max(\"" $4 "\"),5) from " $1 "." $2 "." $3 ") as result"
 
 			} else {
 				# 特に何もしない
@@ -167,8 +169,8 @@ if [ "$COMMAND" = "vimdiff" ]; then
 		IFS='.' read -r -a base_metadata <<< "$TARGET"
 		IFS='.' read -r -a target_metadata <<< "$TARGET2"
 		# テーブルのスキーマ情報を読み出す 存在しないテーブルの場合でもクエリは成功する
-		base_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_catalog = '${base_metadata[0]}' AND table_schema = '${base_metadata[1]}' AND table_name = '${base_metadata[2]}'" | tail -n +3)
-		target_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_catalog = '${target_metadata[0]}' AND table_schema = '${target_metadata[1]}' AND table_name = '${target_metadata[2]}'" | tail -n +3)
+		base_schema=$(get_query_results "SELECT * FROM ${base_metadata[0]}.information_schema.columns WHERE table_catalog = '${base_metadata[0]}' AND table_schema = '${base_metadata[1]}' AND table_name = '${base_metadata[2]}'" | tail -n +3)
+		target_schema=$(get_query_results "SELECT * FROM ${target_metadata[0]}.information_schema.columns WHERE table_catalog = '${target_metadata[0]}' AND table_schema = '${target_metadata[1]}' AND table_name = '${target_metadata[2]}'" | tail -n +3)
 
 		# スキーマ情報から集計用クエリを作る
 		base_query=$(query_builder "$base_schema")
