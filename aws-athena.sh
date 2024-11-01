@@ -94,7 +94,7 @@ query_builder() {
 			} else if (j == 7){
 			print "union all select '\''" $4 "'\'' as column_name, '\''7. max'\'' as agg_type, (select round(max(\"" $4 "\"),5) from " $1 "." $2 "." $3 ") as result"
 			} else if (j == 8){
-			print "union all select '\''" $4 "'\'' as column_name, '\''7. sum'\'' as agg_type, (select round(max(\"" $4 "\"),5) from " $1 "." $2 "." $3 ") as result"
+			print "union all select '\''" $4 "'\'' as column_name, '\''8. sum'\'' as agg_type, (select round(sum(\"" $4 "\"),5) from " $1 "." $2 "." $3 ") as result"
 
 			} else {
 				# 特に何もしない
