@@ -10,7 +10,7 @@ help() {
     echo
     echo "$0 query [query string] ... execution and get result the query"
     echo "$0 file  [.sql file] ... execution and get result from the .sql file"
-    echo "$0 vimdiff [Athena base database_name.table_name] [Athena compare target database_name.table_name] Compare tables first and second argument"
+    echo "$0 vimdiff [Athena base catalog_name.database_name.table_name] [Athena compare target catalog_name.database_name.table_name] Compare tables first and second argument"
     echo
     exit 1
 }
@@ -158,7 +158,7 @@ if [ "$COMMAND" = "vimdiff" ]; then
 		echo "Error: vimdiff requires second and third arg: Athena database_name.table_name"
 		help;
 	elif [[ "$TARGET" != *.* ]] || [[ "$TARGET2" != *.* ]]; then
-		echo "Error: Arguments must be in the format 'database_name.table_name' and contain dot (.)"
+		echo "Error: Arguments must be in the format 'catalog_name.database_name.table_name' and contain dot (.)"
 		help;
 	else
 		base_result=$(mktemp)
@@ -167,13 +167,13 @@ if [ "$COMMAND" = "vimdiff" ]; then
 		IFS='.' read -r -a base_metadata <<< "$TARGET"
 		IFS='.' read -r -a target_metadata <<< "$TARGET2"
 		# テーブルのスキーマ情報を読み出す 存在しないテーブルの場合でもクエリは成功する
-		base_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${base_metadata[0]}' AND table_name = '${base_metadata[1]}'" | tail -n +3)
-		target_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_schema = '${target_metadata[0]}' AND table_name = '${target_metadata[1]}'" | tail -n +3)
+		base_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_catalog = '${base_metadata[0]}' AND table_schema = '${base_metadata[1]}' AND table_name = '${base_metadata[2]}'" | tail -n +3)
+		target_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_catalog = '${target_metadata[0]}' AND table_schema = '${target_metadata[1]}' AND table_name = '${target_metadata[2]}'" | tail -n +3)
 
 		# スキーマ情報から集計用クエリを作る
 		base_query=$(query_builder "$base_schema")
 		target_query=$(query_builder "$target_schema")
-		echo "$target_query"
+
 		# 集計結果を取得する
 		if ! get_query_results "$base_query" > "$base_result"; then
 			echo "Failed on the table provided as the second argument."
