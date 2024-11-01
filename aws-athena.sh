@@ -167,8 +167,8 @@ if [ "$COMMAND" = "vimdiff" ]; then
 		IFS='.' read -r -a base_metadata <<< "$TARGET"
 		IFS='.' read -r -a target_metadata <<< "$TARGET2"
 		# テーブルのスキーマ情報を読み出す 存在しないテーブルの場合でもクエリは成功する
-		base_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_catalog = '${base_metadata[0]}' AND table_schema = '${base_metadata[1]}' AND table_name = '${base_metadata[2]}'" | tail -n +3)
-		target_schema=$(get_query_results "SELECT * FROM information_schema.columns WHERE table_catalog = '${target_metadata[0]}' AND table_schema = '${target_metadata[1]}' AND table_name = '${target_metadata[2]}'" | tail -n +3)
+		base_schema=$(get_query_results "SELECT * FROM ${base_metadata[0]}.information_schema.columns WHERE table_catalog = '${base_metadata[0]}' AND table_schema = '${base_metadata[1]}' AND table_name = '${base_metadata[2]}'" | tail -n +3)
+		target_schema=$(get_query_results "SELECT * FROM ${target_metadata[0]}.information_schema.columns WHERE table_catalog = '${target_metadata[0]}' AND table_schema = '${target_metadata[1]}' AND table_name = '${target_metadata[2]}'" | tail -n +3)
 
 		# スキーマ情報から集計用クエリを作る
 		base_query=$(query_builder "$base_schema")
