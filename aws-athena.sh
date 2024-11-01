@@ -65,7 +65,7 @@ query_builder() {
 	filtered_schema=$(awk -F'\t' '$8 ~/^(tinyint|smallint|integer|bigint|real|double|decimal.*)$/' <<< "${information_schema}")
 
 	# 集計種類の数
-	local agg_phase=7
+	local agg_phase=8
 	# 行数x集計種類数でforを回してクエリを作る
 	agg_query=$(awk -F'\t' -v agg_phase="$agg_phase" '
 	BEGIN {
@@ -93,6 +93,8 @@ query_builder() {
 		print "union all select '\''" $4 "'\'' as column_name, '\''6. median'\'' as agg_type, (select approx_percentile(\"" $4 "\", 0.5) from " $1 "." $2 "." $3 ") as result"
 			} else if (j == 7){
 		print "union all select '\''" $4 "'\'' as column_name, '\''7. max'\'' as agg_type, (select max(\"" $4 "\") from " $1 "." $2 "." $3 ") as result"
+			} else if (j == 8){
+		print "union all select '\''" $4 "'\'' as column_name, '\''7. sum'\'' as agg_type, (select max(\"" $4 "\") from " $1 "." $2 "." $3 ") as result"
 
 			} else {
 				# 特に何もしない
