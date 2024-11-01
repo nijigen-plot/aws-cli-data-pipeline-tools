@@ -87,14 +87,14 @@ query_builder() {
 		print "union all select '\''" $4 "'\'' as column_name, '\''4. std'\'' as agg_type, (select round(stddev(\"" $4 "\"),5) from " $1 "." $2 "." $3 ") as result"
 
 			} else if (j == 5){
-		print "union all select '\''" $4 "'\'' as column_name, '\''5. min'\'' as agg_type, (select min(\"" $4 "\") from " $1 "." $2 "." $3 ") as result"
+			print "union all select '\''" $4 "'\'' as column_name, '\''5. min'\'' as agg_type, (select round(min(\"" $4 "\"),5) from " $1 "." $2 "." $3 ") as result"
 
 			} else if (j == 6){
-		print "union all select '\''" $4 "'\'' as column_name, '\''6. median'\'' as agg_type, (select approx_percentile(\"" $4 "\", 0.5) from " $1 "." $2 "." $3 ") as result"
+			print "union all select '\''" $4 "'\'' as column_name, '\''6. median'\'' as agg_type, (select round(approx_percentile(\"" $4 "\", 0.5),5) from " $1 "." $2 "." $3 ") as result"
 			} else if (j == 7){
-		print "union all select '\''" $4 "'\'' as column_name, '\''7. max'\'' as agg_type, (select max(\"" $4 "\") from " $1 "." $2 "." $3 ") as result"
+			print "union all select '\''" $4 "'\'' as column_name, '\''7. max'\'' as agg_type, (select round(max(\"" $4 "\"),5) from " $1 "." $2 "." $3 ") as result"
 			} else if (j == 8){
-		print "union all select '\''" $4 "'\'' as column_name, '\''7. sum'\'' as agg_type, (select max(\"" $4 "\") from " $1 "." $2 "." $3 ") as result"
+			print "union all select '\''" $4 "'\'' as column_name, '\''7. sum'\'' as agg_type, (select round(max(\"" $4 "\"),5) from " $1 "." $2 "." $3 ") as result"
 
 			} else {
 				# 特に何もしない
