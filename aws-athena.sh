@@ -1,8 +1,11 @@
-#!/bin/bash 
+#!/bin/bash
 
 COMMAND=$1;
 TARGET=$2;
 TARGET2=$3;
+
+# Workgroupの設定（環境変数があればそれを使用、なければprimary）
+WORKGROUP="${ATHENA_WORKGROUP:-primary}"
 
 help() {
     echo
@@ -21,7 +24,7 @@ get_query_results() {
     local result
 
     # クエリ実行の試行とエラーハンドリング
-    execution_response=$(aws athena start-query-execution --query-string "$sql_query" --output json 2>&1)
+    execution_response=$(aws athena start-query-execution --query-string "$sql_query" --work-group "$WORKGROUP" --output json 2>&1)
 
     if echo "$execution_response" | grep -q "InvalidRequestException"; then
         echo "Error starting query execution: $execution_response" >&2
